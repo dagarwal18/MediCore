@@ -13,7 +13,7 @@ const Footer = () => {
                 <Heart className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
-                SahaayAI
+                SahayAI
               </span>
             </div>
             <p className="text-slate-300 text-sm leading-relaxed mb-6">
@@ -77,7 +77,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center hover:text-rose-300 transition-colors cursor-pointer">
                 <Mail className="w-3 h-3 mr-2" />
-                care@healthcare-ai.com
+                care@sahay-ai.com
               </li>
               <li className="flex items-center hover:text-rose-300 transition-colors cursor-pointer">
                 <Activity className="w-3 h-3 mr-2" />
@@ -102,11 +102,11 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-center md:text-left mb-4 md:mb-0">
               <p className="text-sm text-slate-400 mb-2">
-                © 2024 MediCare AI. Dedicated to your wellbeing with compassionate technology.
+                © 2024 SahayAI. Dedicated to your wellbeing with compassionate technology.
               </p>
               <p className="text-xs text-slate-500">
                 <strong>Important:</strong> This platform provides health guidance and support. Always consult healthcare 
-                professionals for medical decisions and emergencies. Call 911 for life-threatening situations.
+                professionals for medical decisions and emergencies. Call 112 for life-threatening situations.
               </p>
             </div>
             
@@ -144,12 +144,7 @@ const Footer = () => {
         <Heart className="w-4 h-4 text-rose-400" />
       </div>
       
-      {/* Medical cross patterns */}
-      <div className="absolute top-1/4 left-12 w-1 h-6 bg-teal-400/20 rounded-full animate-pulse"></div>
-      <div className="absolute top-1/4 left-9 w-6 h-1 bg-teal-400/20 rounded-full animate-pulse"></div>
       
-      <div className="absolute bottom-1/3 right-12 w-1 h-4 bg-emerald-400/20 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
-      <div className="absolute bottom-1/3 right-10 w-4 h-1 bg-emerald-400/20 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
     </footer>
   );
 };

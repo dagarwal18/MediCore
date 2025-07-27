@@ -31,7 +31,7 @@ const SymptomChecker = ({ setCurrentPage }) => {
       id: "welcome",
       role: "system",
       content:
-        "Welcome to SahaayAI. I'm here to help you understand your symptoms with compassionate, evidence-based guidance. Your wellbeing is my priority, and I'll ask gentle questions to better understand how you're feeling today.",
+        "Welcome to SahayAI. I'm here to help you understand your symptoms with compassionate, evidence-based guidance. Your wellbeing is my priority, and I'll ask gentle questions to better understand how you're feeling today.",
       timestamp: new Date(),
     },
   ]);

@@ -11,7 +11,7 @@ const Navigation = () => {
               <Heart className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-              SahaayAI
+              SahayAI
             </span>
           </div>
           <div className="flex items-center space-x-4">

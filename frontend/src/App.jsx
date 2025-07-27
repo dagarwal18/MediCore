@@ -6,6 +6,7 @@ import SymptomChecker from './pages/SymptomChecker';
 import MonitoringPage from './pages/MonitoringPage';
 import ClinicalReviewPage from './pages/ClinicalReviewPage';
 import TriageSystem from './pages/TriagePage';
+import EmergencyCareFinder from './pages/EmergencyCarePage';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -20,6 +21,8 @@ const App = () => {
         return <MonitoringPage setCurrentPage={setCurrentPage} />;
       case 'clinical-review':
         return <ClinicalReviewPage setCurrentPage={setCurrentPage} />;
+      case 'emergency-support':
+        return <EmergencyCareFinder setCurrentPage={setCurrentPage} />;
       default:
         return <HomePage setCurrentPage={setCurrentPage} />;
     }

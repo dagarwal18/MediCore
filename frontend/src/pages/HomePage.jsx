@@ -16,7 +16,7 @@ const HomePage = ({ setCurrentPage }) => {
         setHoveredFeature={setHoveredFeature}
       />
       <ComplianceSection />
-      <EmergencySection />
+      <EmergencySection setCurrentPage={setCurrentPage} />
     </div>
   );
 };

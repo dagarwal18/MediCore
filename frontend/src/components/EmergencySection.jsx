@@ -1,6 +1,6 @@
 import { Phone, Stethoscope, AlertTriangle, Heart, Activity, Clock } from 'lucide-react';
 
-const EmergencySection = () => {
+const EmergencySection = ({ setCurrentPage }) => {
   return (
     <section className="relative py-20 px-4 bg-gradient-to-br from-red-50 via-rose-50/60 to-pink-50/40 overflow-hidden">
       <div className="max-w-5xl mx-auto relative z-10">
@@ -32,7 +32,10 @@ const EmergencySection = () => {
               <p className="text-slate-600 mb-6 leading-relaxed">
                 Life-threatening symptoms detected? Get immediate professional help with direct emergency services connection.
               </p>
-              <button className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-8 py-4 rounded-xl flex items-center justify-center text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+              <button 
+                onClick={() => window.location.href = 'tel:112'}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-8 py-4 rounded-xl flex items-center justify-center text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
                 <Phone className="w-5 h-5 mr-2" />
                 Call Emergency: 112
               </button>
@@ -55,7 +58,10 @@ const EmergencySection = () => {
               <p className="text-slate-600 mb-6 leading-relaxed">
                 Locate nearby emergency rooms, urgent care centers, and healthcare facilities open 24/7 in your area.
               </p>
-              <button className="w-full border-2 border-teal-200 hover:bg-teal-50 hover:border-teal-300 bg-transparent text-teal-700 text-lg px-8 py-4 rounded-xl flex items-center justify-center font-medium transition-all duration-300 shadow-sm hover:shadow-md">
+              <button 
+                onClick={() => setCurrentPage('emergency-support')}
+                className="w-full border-2 border-teal-200 hover:bg-teal-50 hover:border-teal-300 bg-transparent text-teal-700 text-lg px-8 py-4 rounded-xl flex items-center justify-center font-medium transition-all duration-300 shadow-sm hover:shadow-md"
+              >
                 <Stethoscope className="w-5 h-5 mr-2" />
                 Find Emergency Care
               </button>
