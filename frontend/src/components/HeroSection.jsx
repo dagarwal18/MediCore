@@ -2,7 +2,7 @@ import { MessageCircle, Shield, UserCheck, Star, Heart, Activity } from 'lucide-
 
 const HeroSection = ({ setCurrentPage }) => {
   return (
-    <section className="relative overflow-hidden py-20 px-4 bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20">
+    <section className="relative overflow-hidden py-6 px-4 bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-flex items-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-full text-sm font-medium mb-6 shadow-sm">
@@ -10,10 +10,10 @@ const HeroSection = ({ setCurrentPage }) => {
             Trusted Healthcare AI Platform
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className="text-slate-800">Your Health Journey</span>
+            <span className="text-slate-800">आरोग्य-Driven Care</span>
             <br />
             <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-              Starts Here
+              Powered by Innovation
             </span>
           </h1>
           <p className="text-lg text-slate-600 mb-8 max-w-3xl mx-auto leading-relaxed">
