@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { apiFetch } from "../utils/apiFetch";
 import {
   ArrowLeft,
   MessageCircle,
@@ -24,6 +25,7 @@ import {
   Eye,
   Trash2,
 } from "lucide-react";
+
 
 const SymptomChecker = ({ setCurrentPage }) => {
   const [messages, setMessages] = useState([
@@ -77,19 +79,29 @@ const SymptomChecker = ({ setCurrentPage }) => {
     allergies: [],
     emergencyContact: "",
   });
-
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [assessmentPhase, setAssessmentPhase] = useState("onboarding");
   const [extractedSymptoms, setExtractedSymptoms] = useState([]);
   const [urgencyLevel, setUrgencyLevel] = useState("low");
   const [confidenceScore, setConfidenceScore] = useState(0);
+  const [sessionId, setSessionId] = useState(null);
+  const [errors, setErrors] = useState("");
+  const [triageMessageCount, setTriageMessageCount] = useState(0);
+  const TRIAGE_LIMIT = 9;  // Set your desired k, e.g. 3, 5 etc
 
+
+  const chatContainerRef = useRef(null); // New ref for the scrollable chat div
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  if (chatContainerRef.current) {
+    const { scrollHeight, clientHeight } = chatContainerRef.current;
+    chatContainerRef.current.scrollTop = scrollHeight - clientHeight; // Scroll to bottom instantly
+    // Or add smooth animation: chatContainerRef.current.scrollTo({ top: scrollHeight, behavior: 'smooth' });
+  }
+};
 
   useEffect(() => {
     scrollToBottom();
@@ -158,37 +170,73 @@ const SymptomChecker = ({ setCurrentPage }) => {
     return questions.slice(0, 3); // Limit to 3 follow-up questions
   };
 
+  
+
   // File handling functions
-  const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    
-    files.forEach(file => {
-      const newFile = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        type: file.type,
-        size: formatFileSize(file.size),
-        uploadDate: new Date(),
-        category: categorizeFile(file.type),
-        file: file // Store the actual file object
-      };
-      
-      setUploadedFiles(prev => [...prev, newFile]);
+  // In SymptomChecker.jsx
+const handleFileUpload = async (event) => {
+  const files = Array.from(event.target.files);
+  if (!files.length) {
+    alert('Please select at least one file to upload.');
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));  // Key 'files' matches backend
+
+    const response = await apiFetch('/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {}  // Empty—apiFetch handles it
     });
-    
-    // Reset file input
-    event.target.value = '';
-    
-    // Show confirmation message
+
+    // Update local state with uploaded files
+    const newFiles = files.map((file) => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      type: file.type,
+      size: formatFileSize(file.size),
+      uploadDate: new Date(),
+      category: categorizeFile(file.type),
+    }));
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+
+    // Add confirmation message
     const confirmationMessage = {
       id: (Date.now() + 1).toString(),
       role: "assistant",
-      content: `Thank you for uploading your medical documents. I've received ${files.length} file(s). These will help me provide more personalized and accurate guidance based on your medical history.`,
+      content: `Thank you for uploading your medical documents. I've received ${files.length} file(s) and updated your knowledge base: ${response.message}`,
       timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, confirmationMessage]);
-  };
+    setMessages((prev) => [...prev, confirmationMessage]);
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    if (error.message.includes('422')) {
+      alert('Upload failed: Invalid request format (possible file validation issue). Ensure files are valid and try again.');
+    } else if (error.message.includes('401')) {
+      alert('Session expired. Please log in again.');
+      localStorage.removeItem('token');
+      // Optional: Redirect to login
+    } else {
+      alert('Failed to upload files: ' + error.message);
+    }
+  } finally {
+    setIsLoading(false);
+    event.target.value = ''; // Reset input
+  }
+};
+
+const handleFileSelection = (event) => {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  setPendingFiles(files);
+  event.target.value = ''; // Reset input so user can select again if needed
+};
+
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -242,126 +290,115 @@ const SymptomChecker = ({ setCurrentPage }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  // Prevent sending text if triage isn't complete and files are selected
+  if (triageMessageCount < TRIAGE_LIMIT && pendingFiles.length > 0) {
+    alert("Please complete triage questions before uploading files.");
+    return;  // <== Important to return early here so code below doesn't run
+  }
+  
+  if (!input.trim() && pendingFiles.length === 0) return;
 
-    const userMessage = {
+  // Add user message immediately to UI
+  if (input.trim()) {
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       role: "user",
       content: input,
       timestamp: new Date(),
-    };
+    }]);
+  }
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
+  setIsLoading(true);
 
-    // Check for emergency symptoms
-    if (checkForEmergency(input)) {
-      setUrgencyLevel("emergency");
-      const emergencyMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content:
-          "⚠ I'm concerned about your symptoms and want to ensure you get the care you need right away. Please call 911 or go to your nearest emergency room immediately. Your safety is the most important thing right now.",
-        timestamp: new Date(),
-        urgency: "emergency",
-        confidence: 95,
-      };
-      setMessages((prev) => [...prev, emergencyMessage]);
-      setIsLoading(false);
-      return;
-    }
+  try {
+    let responseData;
 
-    // Extract symptoms using NLU
-    const symptoms = extractSymptoms(input);
-    setExtractedSymptoms((prev) => [...new Set([...prev, ...symptoms])]);
-
-    // Simulate AI processing delay
-    setTimeout(() => {
-      let responseContent = "";
-      let followUpQuestions = [];
-
-      switch (assessmentPhase) {
-        case "onboarding":
-          if (!patientProfile.age) {
-            responseContent = "Thank you for sharing that with me. To provide you with the most helpful guidance, could you please tell me your age?";
-            setCurrentStep(2);
-          } else if (patientProfile.medicalHistory.length === 0) {
-            responseContent =
-              "I appreciate you taking the time to share that information. Do you have any ongoing health conditions or take any medications regularly that I should know about?";
-            setCurrentStep(3);
-          } else {
-            responseContent =
-              "Thank you for that background. Now, I'd like to understand what's bringing you here today. Please tell me about the symptoms you're experiencing and when you first noticed them.";
-            setAssessmentPhase("symptom_collection");
-            setCurrentStep(4);
-          }
-          break;
-
-        case "symptom_collection":
-          if (symptoms.length > 0) {
-            responseContent = `I can see that you're dealing with ${symptoms.join(" and ")}. That must be concerning for you. Let me ask a few gentle questions to better understand what you're going through.`;
-            followUpQuestions = generateFollowUpQuestions(symptoms);
-            setAssessmentPhase("follow_up");
-            setCurrentStep(5);
-          } else {
-            responseContent =
-              "I want to make sure I understand exactly how you're feeling. Could you help me by describing your symptoms in a bit more detail?";
-          }
-          break;
-
-        case "follow_up":
-          responseContent =
-            "Thank you for being so thorough in describing your symptoms. I'm now carefully analyzing what you've shared with me using evidence-based medical guidance.";
-          setAssessmentPhase("diagnosis");
-          setCurrentStep(6);
-          setConfidenceScore(85);
-          break;
-
-        case "diagnosis":
-          responseContent = `Based on everything you've shared about your ${extractedSymptoms.join(", ")}, here's what I'm thinking:
-
-**Most Likely Possibilities:**
-
-🔹 **Viral Upper Respiratory Infection** (78% confidence)
-   This appears consistent with a common cold or flu-like illness. These typically improve with rest, fluids, and time (usually 7-10 days).
-
-🔹 **Tension-Type Headache** (65% confidence)
-   Often related to stress, dehydration, or changes in sleep patterns. Usually responds well to rest and over-the-counter pain relief.
-
-🔹 **Seasonal Allergies** (45% confidence)
-   Environmental factors might be contributing to your symptoms. Antihistamines could provide relief.
-
-**My Caring Recommendations:**
-- Focus on rest and staying well-hydrated
-- Monitor how you're feeling and note any changes
-- Consider gentle, over-the-counter remedies as appropriate
-- Please reach out to a healthcare provider if symptoms worsen or don't improve in a week
-
-Would you like help connecting with a healthcare provider or learning about other support options?`;
-          setAssessmentPhase("triage");
-          setCurrentStep(7);
-          break;
-
-        default:
-          responseContent = "Is there anything else about your health that you'd like to discuss or any other way I can support you today?";
+    if (triageMessageCount < TRIAGE_LIMIT) {
+      // Send text-only input messages first to /triage
+      // Note: Typically, triage doesn't handle files, so if files selected, you may want to block or warn user for now
+      if (pendingFiles.length > 0) {
+        alert("Please complete triage questions before uploading files.");
+        setIsLoading(false);
+        return;
       }
+
+      responseData = await apiFetch('/triage', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId, message: input }),
+      });
+
+      // Set session id if new
+      if (!sessionId) setSessionId(responseData.session_id);
+
+      setTriageMessageCount(prev => prev + 1);
+
+      // Update your state based on triage response as before
+      // ...
 
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: responseContent,
+        content: responseData.reply,
         timestamp: new Date(),
-        confidence: confidenceScore,
-        urgency: urgencyLevel,
-        followUp: followUpQuestions,
-        symptoms: symptoms.length > 0 ? symptoms : undefined,
+        // add others as needed
       };
+      setMessages(prev => [...prev, assistantMessage]);
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 2000);
-  };
+    } else {
+      // After triage limit reached, send message + files (if any) via /chat
+
+      const formData = new FormData();
+      pendingFiles.forEach((file) => formData.append('files', file));
+      if (input.trim()) formData.append('query', input);
+
+      responseData = await apiFetch('/chat', {
+        method: 'POST',
+        body: formData,
+        headers: {}, // apiFetch handles multipart
+      });
+
+      // Handle upload results to update uploadedFiles
+      if (responseData.upload_results) {
+        const newlyUploaded = responseData.upload_results
+          .filter(r => r.status !== 'error')
+          .map((res) => ({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            name: res.filename,
+            type: categorizeFile(res.filename),
+            size: "Unknown",
+            uploadDate: new Date(),
+            category: categorizeFile(res.filename),
+          }));
+        setUploadedFiles(prev => [...prev, ...newlyUploaded]);
+      }
+
+      // Append assistant answer
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: responseData.answer || "No answer available.",
+        timestamp: new Date(),
+      }]);
+
+      // Clear pending files after upload
+      setPendingFiles([]);
+    }
+
+    // Clear input
+    setInput("");
+
+  } catch (error) {
+    console.error('Message sending error:', error);
+    setMessages(prev => [...prev, {
+      id: (Date.now() + 1).toString(),
+      role: "system",
+      content: "Sorry, there was an error. Please try again.",
+      timestamp: new Date(),
+    }]);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleQuickResponse = (response) => {
     setInput(response);
@@ -565,6 +602,8 @@ Would you like help connecting with a healthcare provider or learning about othe
                   </div>
                 )}
 
+
+                {/* Your hidden file input ref—assuming it's defined elsewhere */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -574,6 +613,7 @@ Would you like help connecting with a healthcare provider or learning about othe
                   onChange={handleFileUpload}
                 />
 
+                {/* Optional: Your file count footer, if you have it */}
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <div className="flex items-center space-x-2 text-xs text-slate-500">
                     <Database className="w-3 h-3 text-teal-500" />
@@ -583,12 +623,11 @@ Would you like help connecting with a healthcare provider or learning about othe
               </div>
             </div>
           </div>
-
           {/* Chat Interface */}
           <div className="lg:col-span-3">
             <div className="h-[calc(100vh-200px)] flex flex-col backdrop-blur-sm bg-white/80 border border-teal-100/60 rounded-2xl shadow-sm">
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 max-h-[calc(100vh-250px)]">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -684,62 +723,108 @@ Would you like help connecting with a healthcare provider or learning about othe
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
-              <div className="p-6 border-t border-teal-100/40">
-                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-teal-100/40 p-2 shadow-sm">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      ref={inputRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Please describe how you're feeling..."
-                      className="flex-1 border-0 bg-transparent focus:outline-none px-3 py-2 placeholder-slate-400"
-                      disabled={isLoading}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                    />
-
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-slate-500 hover:text-teal-600 transition-colors"
-                      title="Upload files"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-
+              {pendingFiles.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2 max-w-full overflow-x-auto">
+                {pendingFiles.map((file, idx) => (
+                  <div
+                    key={`${file.name}-${file.size}-${idx}`}
+                    className="flex items-center bg-teal-50 border border-teal-200 rounded-full px-3 py-1 text-xs text-teal-700 shadow-sm whitespace-nowrap"
+                  >
+                    {file.name}
                     <button
                       type="button"
-                      className={`p-2 text-slate-500 hover:text-teal-600 transition-colors ${isRecording ? "text-red-500" : ""}`}
-                      onClick={() => setIsRecording(!isRecording)}
+                      onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}
+                      className="ml-2 text-teal-500 hover:text-red-500 focus:outline-none"
+                      aria-label={`Remove file ${file.name}`}
+                      disabled={isLoading}
                     >
-                      <Mic className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!input.trim() || isLoading}
-                      className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 text-white p-2 rounded-lg transition-colors shadow-sm"
-                    >
-                      <Send className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
+                ))}
+              </div>
+            )}
+
+            <div className="p-6 border-t border-teal-100/40">
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-teal-100/40 p-2 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Please describe how you're feeling..."
+                    className="flex-1 border-0 bg-transparent focus:outline-none px-3 py-2 placeholder-slate-400"
+                    disabled={isLoading}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!(triageMessageCount < TRIAGE_LIMIT && pendingFiles.length > 0)) {
+                          handleSendMessage();
+                        } else {
+                          alert("Please complete triage questions before uploading files.");
+                        }
+                      }
+                    }}
+                  />
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      if (files.length > 0) {
+                        setPendingFiles((prev) => [...prev, ...files]);
+                      }
+                      e.target.value = '';
+                    }}
+                    disabled={isLoading}
+                  />
+
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-slate-500 hover:text-teal-600 transition-colors"
+                    title="Upload files"
+                    disabled={isLoading}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`p-2 text-slate-500 hover:text-teal-600 transition-colors ${isRecording ? "text-red-500" : ""}`}
+                    onClick={() => setIsRecording(!isRecording)}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={(pendingFiles.length === 0 && !input.trim()) || isLoading}
+                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 text-white p-2 rounded-lg transition-colors shadow-sm"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                  
-                  <div className="flex items-center space-x-4">
-                    <button className="flex items-center space-x-1 text-xs hover:text-teal-600 transition-colors">
-                      <Calendar className="w-3 h-3" />
-                      <span>Schedule Visit</span>
-                    </button>
-                    <button className="flex items-center space-x-1 text-xs hover:text-teal-600 transition-colors">
-                      <FileText className="w-3 h-3" />
-                      <span>Save Summary</span>
-                    </button>
-                  </div>
+              <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
+                <div className="flex items-center space-x-4">
+                  <button className="flex items-center space-x-1 text-xs hover:text-teal-600 transition-colors">
+                    <Calendar className="w-3 h-3" />
+                    <span>Schedule Visit</span>
+                  </button>
+                  <button className="flex items-center space-x-1 text-xs hover:text-teal-600 transition-colors">
+                    <FileText className="w-3 h-3" />
+                    <span>Save Summary</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Emergency Banner */}
