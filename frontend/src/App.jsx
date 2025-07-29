@@ -7,12 +7,20 @@ import MonitoringPage from './pages/MonitoringPage';
 import ClinicalReviewPage from './pages/ClinicalReviewPage';
 import TriageSystem from './pages/TriagePage';
 import EmergencyCareFinder from './pages/EmergencyCarePage';
+import LoginRegister from './pages/AuthPage';
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('home');
+  // Initialize currentPage based on whether JWT token exists in localStorage
+  const [currentPage, setCurrentPage] = useState(
+    localStorage.getItem('token') ? 'home' : 'auth'
+  );
 
   const renderCurrentPage = () => {
     switch (currentPage) {
+      case 'auth':
+        return <LoginRegister setCurrentPage={setCurrentPage} />;
+      case 'home':
+        return <HomePage setCurrentPage={setCurrentPage} />;
       case 'symptom-checker':
         return <SymptomChecker setCurrentPage={setCurrentPage} />;
       case 'triage':
@@ -24,7 +32,7 @@ const App = () => {
       case 'emergency-support':
         return <EmergencyCareFinder setCurrentPage={setCurrentPage} />;
       default:
-        return <HomePage setCurrentPage={setCurrentPage} />;
+        return <LoginRegister setCurrentPage={setCurrentPage} />;
     }
   };
 

@@ -1,7 +1,12 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 
-const Navigation = () => {
+const Navigation = ({ currentPage, setCurrentPage }) => {
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setCurrentPage('auth');
+  };
+
   return (
     <nav className="backdrop-blur-md bg-white/80 border-b border-teal-100/40 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,8 +26,11 @@ const Navigation = () => {
             <button className="text-slate-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Analytics
             </button>
-            <button className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all">
-              Start Assessment
+            <button 
+              onClick={handleLogout}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all"
+            >
+              Logout
             </button>
           </div>
         </div>
