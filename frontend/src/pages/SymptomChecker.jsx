@@ -186,6 +186,25 @@ const handleVoiceInput = () => {
     return found;
   };
 
+  const handleRestartTriage = () => {
+  setTriageMessageCount(0);
+  setSessionId(null);
+  setMessages([
+    {
+      id: "welcome",
+      role: "system",
+      content:
+        "Welcome to SahayAI. I'm here to help you understand your symptoms with compassionate, evidence-based guidance. Your wellbeing is my priority, and I'll ask gentle questions to better understand how you're feeling today.",
+      timestamp: new Date(),
+    },
+  ]);
+  setInput("");
+  setPendingFiles([]);
+
+  // Clear saved session id in localStorage if any
+  localStorage.removeItem("triageSessionId");
+};
+
   // Dynamic follow-up questions based on symptoms
   const generateFollowUpQuestions = (symptoms) => {
     const questions = [];
@@ -501,16 +520,23 @@ const handleFileSelection = (event) => {
                 </div>
               </div>
             </div>
-
+            <button
+              type="button"
+              onClick={handleRestartTriage}
+              className="ml-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Restart Session
+            </button>
+            
             {/* Progress Indicator */}
-            <div className="flex items-center space-x-4">
+            {/* <div className="flex items-center space-x-4">
               <div className="text-sm text-slate-600">
                 Step {currentStep} of {totalSteps}
               </div>
               <div className="w-32">
                 <ProgressBar value={(currentStep / totalSteps) * 100} />
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </header>
