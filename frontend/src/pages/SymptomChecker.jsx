@@ -89,11 +89,52 @@ const SymptomChecker = ({ setCurrentPage }) => {
   const [triageMessageCount, setTriageMessageCount] = useState(0);
   const TRIAGE_LIMIT = 9;  // Set your desired k, e.g. 3, 5 etc
 
-
+  
+  const recognitionRef = useRef(null);
   const chatContainerRef = useRef(null); // New ref for the scrollable chat div
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Setup browser SpeechRecognition
+useEffect(() => {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognitionRef.current = new SpeechRecognition();
+
+  recognitionRef.current.lang = 'en-US';
+  recognitionRef.current.interimResults = false;
+  recognitionRef.current.maxAlternatives = 1;
+
+  // On result, update input field
+  recognitionRef.current.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    setInput((prevInput) => prevInput ? prevInput + ' ' + transcript : transcript);
+    setIsRecording(false);
+  };
+
+  recognitionRef.current.onerror = (event) => {
+    setIsRecording(false);
+    // Optional: alert or log error
+  };
+
+  recognitionRef.current.onend = () => {
+    setIsRecording(false);
+  };
+}, []);
+
+const handleVoiceInput = () => {
+  if (!recognitionRef.current) return;
+  if (!isRecording) {
+    setIsRecording(true);
+    recognitionRef.current.start();
+  } else {
+    recognitionRef.current.stop();
+    setIsRecording(false);
+  }
+};
+
 
   const scrollToBottom = () => {
   if (chatContainerRef.current) {
@@ -795,10 +836,14 @@ const handleFileSelection = (event) => {
                   <button
                     type="button"
                     className={`p-2 text-slate-500 hover:text-teal-600 transition-colors ${isRecording ? "text-red-500" : ""}`}
-                    onClick={() => setIsRecording(!isRecording)}
+                    onClick={handleVoiceInput}
+                    disabled={isLoading}
+                    title={isRecording ? "Stop recording" : "Start voice typing"}
                   >
                     <Mic className="w-4 h-4" />
                   </button>
+                  {isRecording && <span className="ml-2 text-xs text-red-500">Listening...</span>}
+
 
                   <button
                     onClick={handleSendMessage}
