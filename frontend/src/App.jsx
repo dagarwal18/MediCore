@@ -37,10 +37,12 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col">
       <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
-      {renderCurrentPage()}
-      {currentPage === 'home' && <Footer />}
+      <div className="flex-1 overflow-y-auto">
+        {renderCurrentPage()}
+        {currentPage === 'home' && <Footer />}
+      </div>
     </div>
   );
 };

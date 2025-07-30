@@ -475,7 +475,7 @@ const handleFileSelection = (event) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20">
+    <div className="max-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20">
       {/* Header */}
       <header className="backdrop-blur-md bg-white/80 border-b border-teal-100/40 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4">
@@ -520,7 +520,7 @@ const handleFileSelection = (event) => {
           {/* Patient Profile Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Health Profile Card */}
-            <div className="backdrop-blur-sm bg-white/80 border border-teal-100/60 rounded-2xl shadow-sm">
+            {/* <div className="backdrop-blur-sm bg-white/80 border border-teal-100/60 rounded-2xl shadow-sm">
               <div className="p-6 border-b border-teal-50">
                 <h2 className="text-lg font-semibold flex items-center space-x-2 text-slate-800">
                   <User className="w-5 h-5 text-teal-600" />
@@ -574,7 +574,7 @@ const handleFileSelection = (event) => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Your Reports Card */}
             <div className="backdrop-blur-sm bg-white/80 border border-teal-100/60 rounded-2xl shadow-sm">
